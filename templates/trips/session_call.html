@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page_title }} · Byway{% endblock %}
+
+{% block sos %}{% endblock %}
+
+{% block content %}
+  <main class="screen screen-call">
+    <header class="unsafe-head">
+      <p>Fake incoming call</p>
+      <h1>Noah</h1>
+    </header>
+    <div class="caller" aria-hidden="true">N</div>
+    <p class="timer-label">Sample call · nothing is dialed</p>
+    <div class="action-row call-actions">
+      <a class="button button-end" href="{% url 'session_mode' 'places' %}?{% if preview_query %}{{ preview_query }}&{% endif %}notice=declined">Decline</a>
+      <a class="button" href="{% url 'session_mode' 'places' %}?{% if preview_query %}{{ preview_query }}&{% endif %}notice=answered">Answer</a>
+    </div>
+  </main>
+{% endblock %}

@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block title %}Contacts · Byway{% endblock %}
+
+{% block content %}
+  <main class="screen session">
+    <header class="form-head">
+      <a class="back" href="{% url 'home' %}" aria-label="Back to home">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 5.5 8 12l6.5 6.5 1.4-1.4L10.8 12l5.1-5.1-1.4-1.4Z"/></svg>
+      </a>
+      <h1>Contacts</h1>
+      <span></span>
+    </header>
+    <p class="fine">People you add here can be chosen in Share with.</p>
+    <a class="text-link contacts-link" href="{% url 'escalation' %}">Escalation rules</a>
+    <form class="session-form" action="{% url 'contacts' %}" method="post">
+      {% csrf_token %}
+      <label class="field">Name
+        <input type="text" name="name" value="{{ draft_name }}" maxlength="80" autocomplete="name" required>
+      </label>
+      <label class="field">Phone
+        <input type="tel" name="phone" value="{{ draft_phone }}" maxlength="32" autocomplete="tel" required>
+      </label>
+      {% if error %}
+        <p class="banner">{{ error }}</p>
+      {% endif %}
+      <button class="button" type="submit">Add contact</button>
+    </form>
+    {% if contacts %}
+      <ul class="member-list">
+        {% for contact in contacts %}
+          <li>
+            <span class="avatar" aria-hidden="true">{{ contact.initial }}</span>
+            <span>
+              <strong>{{ contact.name }}</strong>
+              <small>{{ contact.phone }}</small>
+              <small>{% if contact.custom_rules %}Custom rules{% else %}Common rules{% endif %}</small>
+            </span>
+            <span class="row-actions">
+              <a class="edit-link" href="{% url 'contact_edit' contact.id %}">Edit</a>
+              <form method="post" action="{% url 'contact_delete' contact.id %}">
+                {% csrf_token %}
+                <button class="text-button" type="submit">Remove</button>
+              </form>
+            </span>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="empty-note">No contacts yet.</p>
+    {% endif %}
+  </main>
+{% endblock %}
+
+{% block tabbar %}
+  {% include "partials/tabbar.html" with current="contacts" %}
+{% endblock %}

@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}Trips · Byway{% endblock %}
+
+{% block content %}
+  <main class="screen session">
+    <header class="form-head">
+      <a class="back" href="{% url 'home' %}" aria-label="Back to home">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 5.5 8 12l6.5 6.5 1.4-1.4L10.8 12l5.1-5.1-1.4-1.4Z"/></svg>
+      </a>
+      <h1>My Trips</h1>
+      <span></span>
+    </header>
+    <p class="fine">{{ trip_total }} saved · {{ trip_pinged }} pinged</p>
+    <div class="filters" role="group" aria-label="Trip filters">
+      <a href="{% url 'trips' %}" {% if trip_filter == "all" %}aria-current="page"{% endif %}>All</a>
+      <a href="{% url 'trips' %}?status=active" {% if trip_filter == "active" %}aria-current="page"{% endif %}>Active</a>
+      <a href="{% url 'trips' %}?status=pinged" {% if trip_filter == "pinged" %}aria-current="page"{% endif %}>Pinged</a>
+    </div>
+    {% if sessions %}
+      <ul class="member-list">
+        {% for item in sessions %}
+          <li>
+            <a class="trip-link" href="{% url 'session_live' item.id %}">
+              <span class="avatar" aria-hidden="true">{{ item.destination|first }}</span>
+              <span>
+                <strong>{{ item.trip_type|title }} to {{ item.destination }}</strong>
+                <small>{% if item.marked_safe %}Marked safe{% elif item.escalated %}Contacts pinged{% elif item.status == "active" %}Active{% else %}{{ item.status|title }}{% endif %}</small>
+              </span>
+            </a>
+          </li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+    <p class="fine">Earlier sample trips stay below.</p>
+    <ul class="member-list">
+      <li>
+        <a class="trip-link" href="{% url 'session_mode' 'incident' %}">
+          <span class="avatar" aria-hidden="true">!</span>
+          <span>
+            <strong>Oct 24 · Walk</strong>
+            <small>Incident · Illini Union</small>
+          </span>
+        </a>
+      </li>
+      <li>
+        <span class="avatar avatar-2" aria-hidden="true">T</span>
+        <span>
+          <strong>Nov 2 · Transit</strong>
+          <small>Completed · Main Library</small>
+        </span>
+      </li>
+      <li>
+        <span class="avatar avatar-3" aria-hidden="true">R</span>
+        <span>
+          <strong>Nov 8 · Run</strong>
+          <small>Completed · Illini Union</small>
+        </span>
+      </li>
+    </ul>
+  </main>
+{% endblock %}
+
+{% block tabbar %}
+  {% include "partials/tabbar.html" with current="trips" %}
+{% endblock %}

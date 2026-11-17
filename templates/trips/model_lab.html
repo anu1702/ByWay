@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}Model Lab · Byway{% endblock %}
+
+{% block content %}
+  <main class="screen session">
+    <header class="form-head">
+      <a class="back" href="{% url 'profile' %}" aria-label="Back to profile">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 5.5 8 12l6.5 6.5 1.4-1.4L10.8 12l5.1-5.1-1.4-1.4Z"/></svg>
+      </a>
+      <h1>Model Lab</h1>
+      <span></span>
+    </header>
+    <p class="fine">{{ model_name }} is fit on hand-specified examples. These four trips were left out of that fit. This is not a measured accuracy score.</p>
+    <ul class="member-list">
+      {% if ran %}
+        {% for case in cases %}
+          <li>
+            <span>
+              <strong>{{ case.name }}</strong>
+              <small>Expected {{ case.expected }} · Score {{ case.probability|floatformat:2 }}</small>
+              <small>Cautious {{ case.decisions.cautious }} · Balanced {{ case.decisions.balanced }} · Calm {{ case.decisions.calm }}</small>
+            </span>
+          </li>
+        {% endfor %}
+      {% else %}
+        <li><span><strong>Normal coffee detour</strong><small>Not run</small></span></li>
+        <li><span><strong>Long stop off-route</strong><small>Not run</small></span></li>
+        <li><span><strong>Late bus wait</strong><small>Not run</small></span></li>
+        <li><span><strong>Wrong-direction trip</strong><small>Not run</small></span></li>
+      {% endif %}
+    </ul>
+    {% if ran %}
+      <p class="banner">A check-in opens when the score reaches the threshold for that monitoring level: cautious 0.35, balanced 0.50, calm 0.70.</p>
+    {% endif %}
+    <a class="button" href="{% url 'model_lab' %}?run=1">Run sample cases</a>
+  </main>
+{% endblock %}
+
+{% block tabbar %}
+  {% include "partials/tabbar.html" with current="profile" %}
+{% endblock %}

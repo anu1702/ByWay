@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block title %}Somewhere safe · Byway{% endblock %}
+
+{% block content %}
+  <main class="screen form-screen" id="safe-nearby">
+    <header class="form-head">
+      <a class="back" href="{% url 'home' %}" aria-label="Back to home">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 5.5 8 12l6.5 6.5 1.4-1.4L10.8 12l5.1-5.1-1.4-1.4Z"/></svg>
+      </a>
+      <h1>Somewhere safe</h1>
+    </header>
+    <p class="fine">This demo uses {{ demo_here.label }} as your current location. These are public places open near there right now. Closer, staffed places come first. This is not a guarantee of safety. If you are in danger, call 911.</p>
+    <p class="fine">The search sends that location to OpenStreetMap.</p>
+    {% if not places %}
+      <p class="fine" id="safe-status">{% if fallback %}The place search is unavailable. Try again in a moment.{% else %}No open places turned up within about 2.5 miles.{% endif %}</p>
+    {% else %}
+      <p class="fine" id="safe-status">{% if fallback %}The live search did not answer. Campus police is the closest confirmed backup.{% else %}Pick a place. The route starts from {{ demo_here.label }}.{% endif %}</p>
+    {% endif %}
+    <form class="session-form" id="safe-form" action="{% url 'session_begin' %}" method="post" {% if not places %}hidden{% endif %}>
+      {% csrf_token %}
+      <div id="safe-results" class="place-results">
+        {% for place in places %}
+          <label class="dropdown-option">
+            <input type="radio" name="safe_choice" data-name="{{ place.name }}" data-latitude="{{ place.latitude }}" data-longitude="{{ place.longitude }}">
+            <span>{{ place.name }}<small>{{ place.label }}</small></span>
+          </label>
+        {% endfor %}
+      </div>
+      <fieldset>
+        <legend>How you will get there</legend>
+        <div class="type-grid">
+          <label class="type"><input type="radio" name="trip_type" value="walk" checked><span>Walk</span></label>
+          <label class="type"><input type="radio" name="trip_type" value="rideshare"><span>Rideshare</span></label>
+          <label class="type"><input type="radio" name="trip_type" value="transit"><span>Transit</span></label>
+          <label class="type"><input type="radio" name="trip_type" value="run"><span>Run</span></label>
+          <label class="type"><input type="radio" name="trip_type" value="date"><span>Date</span></label>
+          <label class="type"><input type="radio" name="trip_type" value="travel"><span>Travel</span></label>
+        </div>
+      </fieldset>
+      <div class="field">
+        <span id="share-label">Share with</span>
+        <details class="dropdown" id="share-dropdown">
+          <summary id="share-summary" aria-labelledby="share-label">Choose contacts</summary>
+          <div class="dropdown-panel">
+            {% for contact in contacts %}
+              <label class="dropdown-option">
+                <input type="checkbox" name="share_with" value="{{ contact.id }}" data-name="{{ contact.name }}">
+                <span>{{ contact.name }}<small>{{ contact.phone }}</small></span>
+              </label>
+            {% empty %}
+              <p class="fine">No contacts yet.</p>
+            {% endfor %}
+            <a class="text-link" href="{% url 'contacts' %}">Add a contact</a>
+          </div>
+        </details>
+      </div>
+      <fieldset>
+        <legend>Monitoring</legend>
+        <div class="monitor">
+          <label><input type="radio" name="monitoring" value="cautious" {% if monitoring == "cautious" %}checked{% endif %}><span>Cautious</span></label>
+          <label><input type="radio" name="monitoring" value="balanced" {% if monitoring == "balanced" %}checked{% endif %}><span>Balanced</span></label>
+          <label><input type="radio" name="monitoring" value="calm" {% if monitoring == "calm" %}checked{% endif %}><span>Calm</span></label>
+        </div>
+      </fieldset>
+      <input type="hidden" name="destination" id="safe-destination">
+      <input type="hidden" name="place_label" id="safe-label">
+      <input type="hidden" name="place_latitude" id="safe-latitude">
+      <input type="hidden" name="place_longitude" id="safe-longitude">
+      <button class="button" id="safe-go" type="submit" disabled>Take me there</button>
+    </form>
+  </main>
+{% endblock %}
+
+{% block tabbar %}
+  {% include "partials/tabbar.html" with current="start" %}
+{% endblock %}
+
+{% block scripts %}
+  <script>
+    (function () {
+      var results = document.getElementById("safe-results");
+      var go = document.getElementById("safe-go");
+      var summary = document.getElementById("share-summary");
+      var boxes = document.querySelectorAll("#share-dropdown input[type='checkbox']");
+      if (summary) {
+        function shareLabel() {
+          var names = [];
+          boxes.forEach(function (box) {
+            if (box.checked) names.push(box.getAttribute("data-name"));
+          });
+          summary.textContent = names.length ? names.join(", ") : (boxes.length ? "Choose contacts" : "No contacts yet");
+        }
+        boxes.forEach(function (box) { box.addEventListener("change", shareLabel); });
+        shareLabel();
+      }
+      results.querySelectorAll("input[name='safe_choice']").forEach(function (radio) {
+        radio.addEventListener("change", function () {
+          document.getElementById("safe-destination").value = radio.getAttribute("data-name");
+          document.getElementById("safe-label").value = radio.getAttribute("data-name");
+          document.getElementById("safe-latitude").value = radio.getAttribute("data-latitude");
+          document.getElementById("safe-longitude").value = radio.getAttribute("data-longitude");
+          go.disabled = !radio.checked;
+        });
+      });
+    })();
+  </script>
+{% endblock %}

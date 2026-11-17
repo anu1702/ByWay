@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block title %}Escalation · Byway{% endblock %}
+
+{% block content %}
+  <main class="screen session">
+    <header class="form-head">
+      <a class="back" href="{% url 'contacts' %}" aria-label="Back to contacts">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 5.5 8 12l6.5 6.5 1.4-1.4L10.8 12l5.1-5.1-1.4-1.4Z"/></svg>
+      </a>
+      <h1>Escalation</h1>
+      <span></span>
+    </header>
+    <p class="fine">These rules apply to every contact. Open a person to give them a different set. Byway does not contact emergency services.</p>
+    <form class="session-form" action="{% url 'escalation' %}" method="post">
+      {% csrf_token %}
+      <fieldset>
+        <legend>Common rules</legend>
+        {% include "partials/rule_fields.html" %}
+      </fieldset>
+      {% if saved %}
+        <p class="banner">Saved for everyone who uses the common rules.</p>
+      {% endif %}
+      <button class="button" type="submit">Save common rules</button>
+    </form>
+    {% if contacts %}
+      <ul class="member-list">
+        {% for contact in contacts %}
+          <li>
+            <span class="avatar" aria-hidden="true">{{ contact.initial }}</span>
+            <span>
+              <strong>{{ contact.name }}</strong>
+              <small>{% if contact.custom_rules %}Custom rules{% else %}Common rules{% endif %}</small>
+            </span>
+            <a class="edit-link" href="{% url 'contact_edit' contact.id %}">Edit</a>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="empty-note">Add a contact before changing one person.</p>
+      <a class="button" href="{% url 'contacts' %}">Add a contact</a>
+    {% endif %}
+  </main>
+{% endblock %}
+
+{% block tabbar %}
+  {% include "partials/tabbar.html" with current="contacts" %}
+{% endblock %}

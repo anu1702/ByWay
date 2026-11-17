@@ -1,0 +1,21 @@
+<nav class="tabbar" aria-label="Primary">
+  <a href="{% url 'home' %}" {% if current == "home" %}aria-current="page"{% endif %}>
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1v-9.5Z"/></svg>
+    Home
+  </a>
+  <a href="{% url 'trips' %}" {% if current == "trips" %}aria-current="page"{% endif %}>
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 7h12v2H6V7Zm0 4h12v2H6v-2Zm0 4h8v2H6v-2Z"/></svg>
+    Trips
+  </a>
+  <a class="plus" href="{% url 'session_start' %}" aria-label="Start safety session">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5h2v14h-2V5Zm-6 6h14v2H5v-2Z"/></svg>
+  </a>
+  <a href="{% url 'contacts' %}" {% if current == "contacts" %}aria-current="page"{% endif %}>
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 11a3 3 0 1 1 0-6 3 3 0 0 1 0 6Zm8 1a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5ZM3 19c.4-2.6 2.6-4 5-4s4.6 1.4 5 4H3Zm10 .1c.2-1.6 1-2.9 2.2-3.8 1.2.2 2.5.9 3.3 2.2.4.7.6 1.4.6 2.1H13Z"/></svg>
+    Contacts
+  </a>
+  <a href="{% url 'profile' %}" {% if current == "profile" %}aria-current="page"{% endif %}>
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Zm0 2c-3.3 0-7 1.6-7 4v1h14v-1c0-2.4-3.7-4-7-4Z"/></svg>
+    Profile
+  </a>
+</nav>

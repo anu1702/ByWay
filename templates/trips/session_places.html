@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page_title }} · Byway{% endblock %}
+
+{% block content %}
+  <main class="screen session">
+    <header class="trip-head">
+      <a class="back" href="{% if return_session %}{% url 'session_live' return_session %}{% else %}{% url 'session_mode' 'active' %}{% if preview_query %}?{{ preview_query }}{% endif %}{% endif %}" aria-label="Back to the trip">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 5.5 8 12l6.5 6.5 1.4-1.4L10.8 12l5.1-5.1-1.4-1.4Z"/></svg>
+      </a>
+      <div>
+        <h1>Nearby Safe Places</h1>
+        <p class="trip-sub">Public, staffed, and open spots</p>
+      </div>
+    </header>
+    <div class="filters" role="group" aria-label="Place filters">
+      {% for slug, label in filter_choices %}
+        <a href="{% url 'session_mode' 'places' %}?{% if preview_query %}{{ preview_query }}&{% endif %}filter={{ slug }}" {% if filter == slug %}aria-current="page"{% endif %}>{{ label }}</a>
+      {% endfor %}
+    </div>
+    {% if selected_place %}
+      <p class="banner">Sample navigation to {{ selected_place.name }}. No directions were started.</p>
+    {% endif %}
+    {% if notice == "declined" %}
+      <p class="banner">Sample call declined. Nothing was dialed.</p>
+    {% elif notice == "answered" %}
+      <p class="banner">Sample call answered. Nothing was dialed.</p>
+    {% endif %}
+    <ul class="place-list">
+      {% for place in places %}
+        <li>
+          <span class="glyph" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7Zm0 9.5A2.5 2.5 0 1 1 14.5 9 2.5 2.5 0 0 1 12 11.5Z"/></svg>
+          </span>
+          <span>
+            <strong>{{ place.name }}</strong>
+            <small>{{ place.distance }} · {{ place.detail }}</small>
+          </span>
+        </li>
+      {% endfor %}
+    </ul>
+    <a class="button" href="{% url 'session_mode' 'navigate' %}{% if preview_query %}?{{ preview_query }}{% endif %}">Navigate to Illini Union</a>
+    <a class="button button-ghost" href="{% url 'session_mode' 'call' %}{% if preview_query %}?{{ preview_query }}{% endif %}">Fake Incoming Call</a>
+  </main>
+{% endblock %}
+
+{% block tabbar %}
+  {% include "partials/tabbar.html" %}
+{% endblock %}

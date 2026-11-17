@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page_title }} · Byway{% endblock %}
+
+{% block content %}
+  <main class="screen session">
+    <header class="trip-head">
+      <a class="back" href="{% url 'home' %}" aria-label="Back to home">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 5.5 8 12l6.5 6.5 1.4-1.4L10.8 12l5.1-5.1-1.4-1.4Z"/></svg>
+      </a>
+      <div>
+        <h1>Your Trip Is Active</h1>
+        <p class="trip-sub">{{ trip_label }} to {{ destination }}</p>
+      </div>
+      <span class="pill">Monitoring</span>
+    </header>
+    {% include "partials/sample_map.html" %}
+    <p class="fine map-note">Sample route. Location stays off until a real session asks for it.</p>
+    <article class="status-card">
+      <span class="dot" aria-hidden="true"></span>
+      <div>
+        <strong>On Track</strong>
+        <p>Sample arrival 10:24 PM · 3 min early</p>
+      </div>
+    </article>
+    <section class="signal-block">
+      <h2>AI Monitoring</h2>
+      <ul class="signals">
+        <li>Route is normal</li>
+        <li>Movement detected</li>
+        <li>Arrival is inside the expected range</li>
+      </ul>
+      <p class="fine">{{ monitoring_label }} monitoring. {{ monitoring_note }}</p>
+    </section>
+    {% if ok %}
+      <p class="banner">Sample: you confirmed you are okay. Monitoring continues.</p>
+    {% endif %}
+    <div class="action-row">
+      <a class="button" href="{% url 'session_mode' 'active' %}?{% if preview_query %}{{ preview_query }}&{% endif %}ok=1">I’m Okay</a>
+      <a class="button button-danger" href="{% url 'session_mode' 'unsafe' %}{% if preview_query %}?{{ preview_query }}{% endif %}">Unsafe</a>
+    </div>
+  </main>
+{% endblock %}
+
+{% block tabbar %}
+  {% include "partials/tabbar.html" %}
+{% endblock %}

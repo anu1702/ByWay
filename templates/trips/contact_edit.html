@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}Edit {{ contact.name }} · Byway{% endblock %}
+
+{% block content %}
+  <main class="screen session">
+    <header class="form-head">
+      <a class="back" href="{% url 'contacts' %}" aria-label="Back to contacts">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 5.5 8 12l6.5 6.5 1.4-1.4L10.8 12l5.1-5.1-1.4-1.4Z"/></svg>
+      </a>
+      <h1>Edit rules</h1>
+      <span></span>
+    </header>
+    <p class="profile-name">{{ contact.name }}</p>
+    <p class="fine">{{ contact.phone }}</p>
+    <form class="session-form" action="{% url 'contact_edit' contact.id %}" method="post">
+      {% csrf_token %}
+      <fieldset>
+        <legend>Rules for this person</legend>
+        <div class="monitor monitor-two">
+          <label>
+            <input type="radio" name="mode" value="common" {% if not contact.custom_rules %}checked{% endif %}>
+            <span>Same as everyone</span>
+          </label>
+          <label>
+            <input type="radio" name="mode" value="custom" {% if contact.custom_rules %}checked{% endif %}>
+            <span>Custom</span>
+          </label>
+        </div>
+      </fieldset>
+      <fieldset id="custom-rules">
+        <legend>If a check-in is missed</legend>
+        {% include "partials/rule_fields.html" %}
+        <p class="fine">Custom choices apply only to {{ contact.name }}. Everyone else keeps the common rules.</p>
+      </fieldset>
+      {% if saved %}
+        <p class="banner">Saved for {{ contact.name }}.</p>
+      {% endif %}
+      <button class="button" type="submit">Save</button>
+    </form>
+  </main>
+{% endblock %}
+
+{% block tabbar %}
+  {% include "partials/tabbar.html" with current="contacts" %}
+{% endblock %}
+
+{% block scripts %}
+  <script>
+    (function () {
+      var custom = document.querySelector('input[name="mode"][value="custom"]');
+      var boxes = document.querySelectorAll("#custom-rules input");
+      if (!custom) return;
+      function sync() {
+        boxes.forEach(function (box) { box.disabled = !custom.checked; });
+      }
+      document.querySelectorAll('input[name="mode"]').forEach(function (radio) {
+        radio.addEventListener("change", sync);
+      });
+      sync();
+    })();
+  </script>
+{% endblock %}

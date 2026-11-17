@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block title %}Create account · Byway{% endblock %}
+
+{% block content %}
+  <main class="screen welcome">
+    <header class="brand-row">
+      <a class="back" href="{% url 'login' %}" aria-label="Back to sign in">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 5.5 8 12l6.5 6.5 1.4-1.4L10.8 12l5.1-5.1-1.4-1.4Z"/></svg>
+      </a>
+      <strong>Byway</strong>
+    </header>
+    <div class="welcome-copy">
+      <h1>Create an account</h1>
+      <p>Your contacts and trips stay on this account.</p>
+    </div>
+    <form class="session-form" method="post" action="{% url 'register' %}">
+      {% csrf_token %}
+      <label class="field">Username
+        <input name="username" autocomplete="username" required value="{{ username }}">
+      </label>
+      <label class="field">Password
+        <input type="password" name="password" autocomplete="new-password" required>
+      </label>
+      {% if error %}<p class="banner">{{ error }}</p>{% endif %}
+      <button class="button" type="submit">Create account</button>
+    </form>
+  </main>
+{% endblock %}

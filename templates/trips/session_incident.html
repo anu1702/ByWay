@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page_title }} · Byway{% endblock %}
+
+{% block content %}
+  <main class="screen session">
+    <header class="trip-head">
+      <a class="back" href="{% url 'trips' %}" aria-label="Back to trips">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 5.5 8 12l6.5 6.5 1.4-1.4L10.8 12l5.1-5.1-1.4-1.4Z"/></svg>
+      </a>
+      <div>
+        <h1>Incident</h1>
+        <p class="trip-sub">Oct 24, 10:37 PM</p>
+      </div>
+    </header>
+    <div class="tabs" role="tablist" aria-label="Incident sections">
+      <a href="{% url 'session_mode' 'incident' %}?{% if preview_query %}{{ preview_query }}&{% endif %}tab=summary" {% if tab == "summary" %}aria-current="page"{% endif %}>Summary</a>
+      <a href="{% url 'session_mode' 'incident' %}?{% if preview_query %}{{ preview_query }}&{% endif %}tab=audio" {% if tab == "audio" %}aria-current="page"{% endif %}>Audio</a>
+      <a href="{% url 'session_mode' 'incident' %}?{% if preview_query %}{{ preview_query }}&{% endif %}tab=location" {% if tab == "location" %}aria-current="page"{% endif %}>Location</a>
+    </div>
+    {% if notice == "export" %}
+      <p class="banner">Sample only. No PDF was created.</p>
+    {% elif notice == "delete" %}
+      <p class="banner">Sample only. Nothing was deleted.</p>
+    {% endif %}
+    {% if tab == "audio" %}
+      <section class="panel">
+        <h2>Audio evidence</h2>
+        <p>Sample recording 00:02:14, captured during Unsafe Mode. Playback is not available in this preview.</p>
+      </section>
+      <ol class="transcript">
+        <li><time>10:40:18</time><span>I’m walking toward the Union.</span></li>
+        <li><time>10:41:02</time><span>Background speech detected.</span></li>
+        <li><time>10:42:11</time><span>Please stay on the phone with me.</span></li>
+      </ol>
+      <p class="fine">This transcript is a sample. A real one can miss words, and you would review it before export.</p>
+    {% elif tab == "location" %}
+      {% include "partials/sample_map.html" with map_class="map-short" %}
+      <section class="panel">
+        <h2>Sample location</h2>
+        <p>Last sample point: Illini Union. Live location is off in this preview.</p>
+      </section>
+    {% else %}
+      <ol class="timeline">
+        <li><time>10:37 PM</time><strong>Unsafe Mode started</strong><span>Audio recording started</span></li>
+        <li><time>10:42 PM</time><strong>Route deviation detected</strong><span>0.6 mi from the usual route</span></li>
+        <li><time>10:44 PM</time><strong>Check-in missed</strong><span>No response</span></li>
+        <li><time>10:45 PM</time><strong>Trusted contact notified</strong><span>Sample contact · live location shared</span></li>
+        <li><time>10:52 PM</time><strong>Reached safe place</strong><span>Illini Union</span></li>
+      </ol>
+      <section class="panel">
+        <h2>AI Summary</h2>
+        <p>On Oct 24, Unsafe Mode started at 10:37 PM. The sample shows a route deviation and a missed check-in. A contact was notified at 10:45 PM, and the sample ends at Illini Union at 10:52 PM.</p>
+        <ul class="evidence">
+          <li>Route events: 5</li>
+          <li>Audio clips: 1</li>
+          <li>Check-ins: 2</li>
+          <li>User notes: 1</li>
+        </ul>
+      </section>
+    {% endif %}
+    <a class="button button-ghost" href="{% url 'session_mode' 'incident' %}?{% if preview_query %}{{ preview_query }}&{% endif %}tab={{ tab }}&notice=export">Export Report (PDF)</a>
+    <a class="button button-danger" href="{% url 'session_mode' 'incident' %}?{% if preview_query %}{{ preview_query }}&{% endif %}tab={{ tab }}&notice=delete">Delete Incident</a>
+  </main>
+{% endblock %}
+
+{% block tabbar %}
+  {% include "partials/tabbar.html" %}
+{% endblock %}

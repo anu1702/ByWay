@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block title %}Profile · Byway{% endblock %}
+
+{% block content %}
+  <main class="screen session">
+    <header class="form-head">
+      <a class="back" href="{% url 'home' %}" aria-label="Back to home">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 5.5 8 12l6.5 6.5 1.4-1.4L10.8 12l5.1-5.1-1.4-1.4Z"/></svg>
+      </a>
+      <h1>Profile</h1>
+      <span></span>
+    </header>
+    <p class="profile-name">{{ user.first_name|default:user.username }}</p>
+    <p class="fine">Signed in as {{ user.username }}.</p>
+    <a class="quiet-card" href="{% url 'model_lab' %}">
+      <span class="glyph" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M4 19h16v2H4v-2Zm2-3 4-6 3 4 2-3 5 5H6Z"/></svg>
+      </span>
+      <span>
+        <strong>Model Lab</strong>
+        <small>Sample journeys and check-in cases</small>
+      </span>
+    </a>
+    <form class="session-form" action="{% url 'profile' %}" method="post">
+      {% csrf_token %}
+      <fieldset>
+        <legend>Monitoring sensitivity</legend>
+        <div class="monitor">
+          <label><input type="radio" name="monitoring" value="cautious" {% if monitoring == "cautious" %}checked{% endif %}><span>Cautious</span></label>
+          <label><input type="radio" name="monitoring" value="balanced" {% if monitoring == "balanced" %}checked{% endif %}><span>Balanced</span></label>
+          <label><input type="radio" name="monitoring" value="calm" {% if monitoring == "calm" %}checked{% endif %}><span>Calm</span></label>
+        </div>
+      </fieldset>
+      <fieldset>
+        <legend>Audio retention</legend>
+        <div class="monitor">
+          <label><input type="radio" name="audio" value="1" {% if audio == "1" %}checked{% endif %}><span>1 day</span></label>
+          <label><input type="radio" name="audio" value="7" {% if audio == "7" %}checked{% endif %}><span>7 days</span></label>
+          <label><input type="radio" name="audio" value="keep" {% if audio == "keep" %}checked{% endif %}><span>Until I delete</span></label>
+        </div>
+      </fieldset>
+      <fieldset>
+        <legend>Location retention</legend>
+        <div class="monitor">
+          <label><input type="radio" name="location" value="7" {% if location == "7" %}checked{% endif %}><span>7 days</span></label>
+          <label><input type="radio" name="location" value="30" {% if location == "30" %}checked{% endif %}><span>30 days</span></label>
+          <label><input type="radio" name="location" value="keep" {% if location == "keep" %}checked{% endif %}><span>Until I delete</span></label>
+        </div>
+      </fieldset>
+      <fieldset>
+        <legend>Auto escalation</legend>
+        <div class="monitor">
+          <label><input type="radio" name="escalation" value="contacts" {% if escalation == "contacts" %}checked{% endif %}><span>Contacts only</span></label>
+          <label><input type="radio" name="escalation" value="ask" {% if escalation == "ask" %}checked{% endif %}><span>Ask me</span></label>
+          <label><input type="radio" name="escalation" value="off" {% if escalation == "off" %}checked{% endif %}><span>Off</span></label>
+        </div>
+      </fieldset>
+      <fieldset>
+        <legend>AI summary</legend>
+        <div class="monitor monitor-two">
+          <label><input type="radio" name="summary" value="review" {% if summary == "review" %}checked{% endif %}><span>Review first</span></label>
+          <label><input type="radio" name="summary" value="off" {% if summary == "off" %}checked{% endif %}><span>Off</span></label>
+        </div>
+      </fieldset>
+      {% if saved %}
+        <p class="banner">Preferences saved for this account.</p>
+      {% endif %}
+      <button class="button" type="submit">Save preferences</button>
+    </form>
+    <form method="post" action="{% url 'logout' %}">
+      {% csrf_token %}
+      <button class="button button-ghost" type="submit">Log out</button>
+    </form>
+  </main>
+{% endblock %}
+
+{% block tabbar %}
+  {% include "partials/tabbar.html" with current="profile" %}
+{% endblock %}

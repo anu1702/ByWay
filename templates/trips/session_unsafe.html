@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page_title }} · Byway{% endblock %}
+
+{% block sos %}{% endblock %}
+
+{% block content %}
+  <main class="screen screen-unsafe">
+    <header class="unsafe-head">
+      <p>Recording · Monitoring · Sharing</p>
+      <h1>Unsafe Mode Active</h1>
+      <p>Call 911 opens your phone. Byway does not dial it for you.</p>
+    </header>
+    <div class="pulse" aria-hidden="true">
+      <span>00:02:14</span>
+    </div>
+    <p class="timer-label">Sample timer</p>
+    <ul class="unsafe-list">
+      <li>Live location shared with {{ share_with }}</li>
+      <li>Audio recording in progress</li>
+      <li>High-sensitivity monitoring</li>
+    </ul>
+    <div class="unsafe-actions">
+      <a class="button call-911-solid" href="tel:911">Call 911</a>
+      <a class="button button-end" href="{% if request.GET.sos %}{% url 'home' %}{% else %}{% url 'session_mode' 'active' %}{% if preview_query %}?{{ preview_query }}{% endif %}{% endif %}">End Unsafe Mode</a>
+    </div>
+  </main>
+{% endblock %}

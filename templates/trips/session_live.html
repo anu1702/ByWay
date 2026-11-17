@@ -1,0 +1,247 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ page_title }} · Byway{% endblock %}
+
+{% block head %}
+  <link rel="stylesheet" href="{% static 'vendor/leaflet/leaflet.css' %}">
+{% endblock %}
+
+{% block content %}
+  <main class="screen session" {% if checkin %}data-deadline="{{ checkin.deadline|date:'c' }}" data-checkin="{{ checkin.number }}"{% endif %} {% if notify %}data-notify="1"{% endif %} {% if not session.marked_safe %}data-location="{% url 'session_location' session.id %}" data-live="{% url 'session_live' session.id %}" data-demo-lat="{{ demo_here.latitude }}" data-demo-lng="{{ demo_here.longitude }}"{% endif %}>
+    {% csrf_token %}
+    <header class="trip-head">
+      <a class="back" href="{% url 'home' %}" aria-label="Back to home">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 5.5 8 12l6.5 6.5 1.4-1.4L10.8 12l5.1-5.1-1.4-1.4Z"/></svg>
+      </a>
+      <div>
+        <h1>{% if session.marked_safe %}You’re safe{% elif session.escalated %}Contacts pinged{% elif checkin %}Check-in{% else %}Your Trip Is Active{% endif %}</h1>
+        <p class="trip-sub">{{ trip_label }} to {{ session.destination }}</p>
+      </div>
+      <span class="pill">Monitoring</span>
+    </header>
+    <div id="live-map" class="map map-live" role="img" aria-label="Map to {{ session.destination }}"></div>
+    {{ route_points|json_script:"trip-route" }}
+    {{ map_center|json_script:"trip-center" }}
+    {{ destination_point|json_script:"trip-destination" }}
+    <p class="fine">This demo uses {{ demo_here.label }} as your current location.</p>
+    <section class="directions" id="trip-nav" {% if not route_steps %}hidden{% endif %}>
+      <h2>Directions</h2>
+      <p class="fine" id="trip-summary">{{ route_summary }}</p>
+      <ol id="trip-steps">
+        {% for step in route_steps %}
+          <li><strong>{{ step.text }}</strong>{% if step.distance %}<small>{{ step.distance }}</small>{% endif %}</li>
+        {% endfor %}
+      </ol>
+    </section>
+    {% if session.route_status == "ready" %}
+      <p class="fine">Road route from OpenStreetMap. Requesting it sends that start point and the destination to the routing service.</p>
+    {% elif session.route_status == "unavailable" %}
+      <p class="fine">A road route was not found. Route signals stay at zero.</p>
+    {% endif %}
+    {% if session.escalated %}
+      <article class="status-card">
+        <span class="dot{% if not session.marked_safe %} dot-alert{% endif %}" aria-hidden="true"></span>
+        <div>
+          {% if session.marked_safe %}
+            <strong>You marked yourself safe</strong>
+            <p>Your contacts were told you are safe.</p>
+          {% else %}
+            <strong>Two check-ins missed</strong>
+            <p>Your contacts were updated from the rules you saved.</p>
+          {% endif %}
+        </div>
+      </article>
+      <div class="action-row">
+        {% if not session.marked_safe %}
+          <form method="post" action="{% url 'session_safe' session.id %}">
+            {% csrf_token %}
+            <button class="button" type="submit">I’m safe</button>
+          </form>
+        {% endif %}
+        <a class="button button-ghost" href="{% url 'session_mode' 'places' %}?return_session={{ session.id }}">Get me out</a>
+      </div>
+      {% if pings %}
+        <ul class="member-list">
+          {% for ping in pings %}
+            <li>
+              <span class="avatar" aria-hidden="true">{{ ping.contact.initial }}</span>
+              <span>
+                <strong>{{ ping.contact.name }}</strong>
+                <small>
+                  {% if "I am safe" in ping.message %}
+                    All clear
+                  {% else %}
+                    {% if ping.shared_location %}Live location included{% else %}Location left off{% endif %}
+                    · {% if ping.sent_alert %}Ping included{% else %}Ping left off{% endif %}
+                  {% endif %}
+                </small>
+                <small>{{ ping.message }}</small>
+              </span>
+            </li>
+          {% endfor %}
+        </ul>
+        <p class="fine">Saved in Byway for those contacts. A phone text is not sent yet.</p>
+        <a class="text-link" href="{% url 'session_export' session.id %}">Export this trip</a>
+      {% else %}
+        <p class="banner">No contact on this trip has location sharing or a ping turned on.</p>
+      {% endif %}
+    {% elif checkin %}
+      <section class="prompt">
+        <p class="countdown" id="checkin-clock">0:30</p>
+        <h2>Are you okay?</h2>
+        {% if checkin.number == 1 %}
+          <p>Your trip looks unusual. This is check-in 1 of 2.</p>
+        {% else %}
+          <p>You missed the first check-in. One more miss shares your live location and pings the contacts whose rules allow it.</p>
+        {% endif %}
+        <form method="post" action="{% url 'session_answer' session.id %}">
+          {% csrf_token %}
+          <button class="button" type="submit">I’m Okay</button>
+        </form>
+        <form id="miss-form" method="post" action="{% url 'session_miss' session.id %}">
+          {% csrf_token %}
+        </form>
+      </section>
+    {% else %}
+      <article class="status-card">
+        <span class="dot" aria-hidden="true"></span>
+        <div>
+          <strong>On Track</strong>
+          <p>{{ monitoring_label }} monitoring. {{ monitoring_note }}</p>
+        </div>
+      </article>
+      <p class="fine">Each new location is scored against this route. A check-in opens on its own when the score crosses your monitoring level.</p>
+      <a class="text-link" href="{% url 'session_export' session.id %}">Export this trip</a>
+    {% endif %}
+  </main>
+{% endblock %}
+
+{% block tabbar %}
+  {% include "partials/tabbar.html" %}
+{% endblock %}
+
+{% block scripts %}
+  <script src="{% static 'vendor/leaflet/leaflet.js' %}"></script>
+  <script>
+    (function () {
+      var mapNode = document.getElementById("live-map");
+      if (!mapNode || !window.L) return;
+      var routeNode = document.getElementById("trip-route");
+      var centerNode = document.getElementById("trip-center");
+      var route = routeNode ? JSON.parse(routeNode.textContent) : [];
+      var center = centerNode ? JSON.parse(centerNode.textContent) : [40.1106, -88.2272];
+      var destinationNode = document.getElementById("trip-destination");
+      var destination = destinationNode ? JSON.parse(destinationNode.textContent) : null;
+      var map = L.map(mapNode, {zoomControl: true, fadeAnimation: false}).setView(center, 15);
+      L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: "&copy; OpenStreetMap",
+        maxZoom: 19
+      }).addTo(map);
+      var line = null;
+      var you = null;
+      window.bywayMap = {
+        showRoute: function (points) {
+          if (!points || points.length < 2) return;
+          if (line) map.removeLayer(line);
+          line = L.polyline(points, {color: "#ff8a6a", weight: 4}).addTo(map);
+          map.fitBounds(line.getBounds(), {padding: [18, 18]});
+        },
+        showYou: function (latitude, longitude) {
+          if (!you) {
+            you = L.circleMarker([latitude, longitude], {
+              radius: 7,
+              color: "#ffffff",
+              weight: 2,
+              fillColor: "#ff8a6a",
+              fillOpacity: 1
+            }).addTo(map);
+          } else {
+            you.setLatLng([latitude, longitude]);
+          }
+        }
+      };
+      window.bywayMap.showRoute(route);
+      if (destination) {
+        L.circleMarker(destination, {radius: 6, color: "#ff5d78", weight: 2, fillColor: "#ff5d78", fillOpacity: 1}).addTo(map);
+      }
+    })();
+  </script>
+  <script>
+    (function () {
+      var screen = document.querySelector(".session");
+      if (!screen) return;
+      var token = document.querySelector("[name=csrfmiddlewaretoken]");
+      if (token && screen.dataset.location && screen.dataset.demoLat && screen.dataset.demoLng) {
+        var body = new FormData();
+        body.append("csrfmiddlewaretoken", token.value);
+        body.append("latitude", screen.dataset.demoLat);
+        body.append("longitude", screen.dataset.demoLng);
+        body.append("accuracy", "15");
+        fetch(screen.dataset.location, {method: "POST", body: body, credentials: "same-origin"})
+          .then(function (response) { return response.json(); })
+          .then(function (data) {
+            if (!data || !data.ok || data.ignored) return;
+            if (window.bywayMap) {
+              window.bywayMap.showYou(Number(screen.dataset.demoLat), Number(screen.dataset.demoLng));
+              if (data.route) window.bywayMap.showRoute(data.route);
+            }
+            var nav = document.getElementById("trip-nav");
+            var list = document.getElementById("trip-steps");
+            var summary = document.getElementById("trip-summary");
+            if (nav && list && data.steps && data.steps.length) {
+              list.replaceChildren();
+              data.steps.forEach(function (step) {
+                var item = document.createElement("li");
+                var title = document.createElement("strong");
+                title.textContent = step.text;
+                item.appendChild(title);
+                if (step.distance) {
+                  var detail = document.createElement("small");
+                  detail.textContent = step.distance;
+                  item.appendChild(detail);
+                }
+                list.appendChild(item);
+              });
+              if (summary) summary.textContent = data.summary || "";
+              nav.hidden = false;
+            }
+            if (data.checkin && screen.dataset.live) location.href = screen.dataset.live + "?notify=1";
+          })
+          .catch(function () {});
+      }
+      function notify(title, body) {
+        if (!window.Notification || Notification.permission !== "granted") return;
+        new Notification(title, {body: body});
+      }
+      if (window.Notification && Notification.permission === "default") {
+        Notification.requestPermission();
+      }
+      if (screen.dataset.notify === "1") {
+        var second = screen.dataset.checkin === "2";
+        notify(
+          second ? "Second check-in" : "Byway check-in",
+          second ? "You missed a check-in. Are you okay?" : "Your trip looks unusual. Are you okay?"
+        );
+      }
+      var clock = document.getElementById("checkin-clock");
+      var miss = document.getElementById("miss-form");
+      if (!clock || !miss || !screen.dataset.deadline) return;
+      var deadline = new Date(screen.dataset.deadline).getTime();
+      var sent = false;
+      function tick() {
+        var left = Math.max(0, Math.ceil((deadline - Date.now()) / 1000));
+        var minutes = Math.floor(left / 60);
+        var seconds = String(left % 60).padStart(2, "0");
+        clock.textContent = minutes + ":" + seconds;
+        if (left <= 0 && !sent) {
+          sent = true;
+          miss.submit();
+          return;
+        }
+        window.setTimeout(tick, 250);
+      }
+      tick();
+    })();
+  </script>
+{% endblock %}

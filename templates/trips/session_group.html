@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page_title }} · Byway{% endblock %}
+
+{% block content %}
+  <main class="screen session">
+    <header class="trip-head">
+      <a class="back" href="{% url 'home' %}" aria-label="Back to home">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 5.5 8 12l6.5 6.5 1.4-1.4L10.8 12l5.1-5.1-1.4-1.4Z"/></svg>
+      </a>
+      <div>
+        <h1>Girls Night Out</h1>
+        <p class="trip-sub">4 members · Active</p>
+      </div>
+    </header>
+    {% include "partials/sample_map.html" with map_class="map-short" %}
+    {% if notice == "message" %}
+      <p class="banner">Sample message. The group was not contacted.</p>
+    {% elif notice == "link" %}
+      <p class="banner">Sample live link. Nothing was shared.</p>
+    {% endif %}
+    <ul class="member-list">
+      <li>
+        <span class="avatar" aria-hidden="true">Y</span>
+        <span><strong>You</strong><small>The Red Lion</small></span>
+        <em>Now</em>
+      </li>
+      <li>
+        <span class="avatar avatar-2" aria-hidden="true">P</span>
+        <span><strong>Priya</strong><small>0.1 mi away · 1 min ago</small></span>
+      </li>
+      <li>
+        <span class="avatar avatar-3" aria-hidden="true">L</span>
+        <span><strong>Lena</strong><small>0.2 mi away · Now</small></span>
+      </li>
+      <li>
+        <span class="avatar avatar-4" aria-hidden="true">C</span>
+        <span><strong>Camille</strong><small>0.4 mi away · Moving</small></span>
+      </li>
+    </ul>
+    <div class="action-row">
+      <a class="button button-ghost" href="{% url 'session_mode' 'group' %}?{% if preview_query %}{{ preview_query }}&{% endif %}notice=message">Message Group</a>
+      <a class="button" href="{% url 'session_mode' 'group' %}?{% if preview_query %}{{ preview_query }}&{% endif %}notice=link">Share Live Link</a>
+    </div>
+  </main>
+{% endblock %}
+
+{% block tabbar %}
+  {% include "partials/tabbar.html" %}
+{% endblock %}

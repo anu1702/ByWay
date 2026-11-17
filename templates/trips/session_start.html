@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+
+{% block title %}Start safety session · Byway{% endblock %}
+
+{% block content %}
+  <main class="screen form-screen">
+    <header class="form-head">
+      <a class="back" href="{% url 'home' %}" aria-label="Back to home">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 5.5 8 12l6.5 6.5 1.4-1.4L10.8 12l5.1-5.1-1.4-1.4Z"/></svg>
+      </a>
+      <h1>Start Safety Session</h1>
+    </header>
+    <form class="session-form" action="{% url 'session_begin' %}" method="post">
+      {% csrf_token %}
+      <fieldset>
+        <legend>Trip type</legend>
+        <div class="type-grid">
+          <label class="type"><input type="radio" name="trip_type" value="walk" checked><span>Walk</span></label>
+          <label class="type"><input type="radio" name="trip_type" value="rideshare"><span>Rideshare</span></label>
+          <label class="type"><input type="radio" name="trip_type" value="transit"><span>Transit</span></label>
+          <label class="type"><input type="radio" name="trip_type" value="run"><span>Run</span></label>
+          <label class="type"><input type="radio" name="trip_type" value="date"><span>Date</span></label>
+          <label class="type"><input type="radio" name="trip_type" value="travel"><span>Travel</span></label>
+        </div>
+      </fieldset>
+      <label class="field">Destination
+        <input id="destination" type="text" name="destination" value="Main Library" maxlength="120" autocomplete="off">
+      </label>
+      <button class="button button-ghost" id="find-places" type="button">Find places</button>
+      <div id="place-results" class="place-results" hidden></div>
+      <input type="hidden" name="place_label" id="place-label">
+      <input type="hidden" name="place_latitude" id="place-latitude">
+      <input type="hidden" name="place_longitude" id="place-longitude">
+      <p class="fine" id="place-note">Find places to choose a match near campus. Add a city, such as Chicago, Illinois, for somewhere farther away.</p>
+      <a class="text-link" href="{% url 'safe_nearby' %}">Feeling unsafe? Find an open place near you.</a>
+      <div class="field">
+        <span id="share-label">Share with</span>
+        <details class="dropdown" id="share-dropdown">
+          <summary id="share-summary" aria-labelledby="share-label">Choose contacts</summary>
+          <div class="dropdown-panel">
+            {% for contact in contacts %}
+              <label class="dropdown-option">
+                <input type="checkbox" name="share_with" value="{{ contact.id }}" data-name="{{ contact.name }}" {% if contact.id in selected_ids %}checked{% endif %}>
+                <span>{{ contact.name }}<small>{{ contact.phone }}</small></span>
+              </label>
+            {% empty %}
+              <p class="fine">No contacts yet.</p>
+            {% endfor %}
+            <a class="text-link" href="{% url 'contacts' %}">Add a contact</a>
+          </div>
+        </details>
+      </div>
+      <fieldset>
+        <legend>Monitoring</legend>
+        <div class="monitor">
+          <label><input type="radio" name="monitoring" value="cautious"><span>Cautious</span></label>
+          <label><input type="radio" name="monitoring" value="balanced" checked><span>Balanced</span></label>
+          <label><input type="radio" name="monitoring" value="calm"><span>Calm</span></label>
+        </div>
+        <p class="fine">Balanced is the recommended setting.</p>
+      </fieldset>
+      <button class="button" type="submit">Start Session</button>
+    </form>
+  </main>
+{% endblock %}
+
+{% block tabbar %}
+  {% include "partials/tabbar.html" with current="start" %}
+{% endblock %}
+
+{% block scripts %}
+  <script>
+    (function () {
+      var summary = document.getElementById("share-summary");
+      var boxes = document.querySelectorAll("#share-dropdown input[type='checkbox']");
+      if (!summary) return;
+      function label() {
+        var names = [];
+        boxes.forEach(function (box) {
+          if (box.checked) names.push(box.getAttribute("data-name"));
+        });
+        summary.textContent = names.length ? names.join(", ") : (boxes.length ? "Choose contacts" : "No contacts yet");
+      }
+      boxes.forEach(function (box) { box.addEventListener("change", label); });
+      label();
+    })();
+    (function () {
+      var input = document.getElementById("destination");
+      var find = document.getElementById("find-places");
+      var results = document.getElementById("place-results");
+      var note = document.getElementById("place-note");
+      var label = document.getElementById("place-label");
+      var latitude = document.getElementById("place-latitude");
+      var longitude = document.getElementById("place-longitude");
+      if (!input || !find || !results) return;
+      function clearPlace() {
+        label.value = "";
+        latitude.value = "";
+        longitude.value = "";
+      }
+      function choose(place) {
+        input.value = place.name;
+        label.value = place.name;
+        latitude.value = String(place.latitude);
+        longitude.value = String(place.longitude);
+      }
+      input.addEventListener("input", clearPlace);
+      input.addEventListener("keydown", function (event) {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          find.click();
+        }
+      });
+      find.addEventListener("click", function () {
+        var query = input.value.trim();
+        results.hidden = true;
+        results.replaceChildren();
+        clearPlace();
+        if (query.length < 2) {
+          note.textContent = "Type at least two letters, then find places.";
+          return;
+        }
+        note.textContent = "Looking up places…";
+        find.disabled = true;
+        fetch("{% url 'place_search' %}?q=" + encodeURIComponent(query), {credentials: "same-origin"})
+          .then(function (response) { return response.json(); })
+          .then(function (data) {
+            var places = data.places || [];
+            if (!places.length) {
+              note.textContent = data.error || "No matching places. You can still start with the name you typed.";
+              return;
+            }
+            places.forEach(function (place) {
+              var row = document.createElement("label");
+              row.className = "dropdown-option";
+              var radio = document.createElement("input");
+              radio.type = "radio";
+              radio.name = "place_choice";
+              var text = document.createElement("span");
+              text.appendChild(document.createTextNode(place.name));
+              var detail = document.createElement("small");
+              detail.textContent = place.label;
+              text.appendChild(detail);
+              radio.addEventListener("change", function () { choose(place); });
+              row.appendChild(radio);
+              row.appendChild(text);
+              results.appendChild(row);
+            });
+            results.hidden = false;
+            results.querySelector("input").checked = true;
+            choose(places[0]);
+            note.textContent = "Pick the OpenStreetMap place you mean.";
+          })
+          .catch(function () {
+            note.textContent = "The map search is unavailable. You can still start with the name you typed.";
+          })
+          .finally(function () { find.disabled = false; });
+      });
+    })();
+  </script>
+{% endblock %}

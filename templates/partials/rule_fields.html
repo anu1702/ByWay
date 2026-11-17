@@ -1,0 +1,14 @@
+<div class="rule-list">
+  <label class="dropdown-option">
+    <input type="checkbox" name="rule" value="checkin" {% if "checkin" in selected_rules %}checked{% endif %}>
+    <span>Open another check-in<small>Ask again before anything is shared</small></span>
+  </label>
+  <label class="dropdown-option">
+    <input type="checkbox" name="rule" value="location" {% if "location" in selected_rules %}checked{% endif %}>
+    <span>Share live location<small>Send live location to the people these rules cover</small></span>
+  </label>
+  <label class="dropdown-option">
+    <input type="checkbox" name="rule" value="alert" {% if "alert" in selected_rules %}checked{% endif %}>
+    <span>Send an alert<small>The same alert you can press yourself</small></span>
+  </label>
+</div>

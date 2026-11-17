@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page_title }} · Byway{% endblock %}
+
+{% block content %}
+  <main class="screen session">
+    <header class="trip-head">
+      <a class="back" href="{% url 'session_mode' 'places' %}{% if preview_query %}?{{ preview_query }}{% endif %}" aria-label="Back to safe places">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 5.5 8 12l6.5 6.5 1.4-1.4L10.8 12l5.1-5.1-1.4-1.4Z"/></svg>
+      </a>
+      <div>
+        <h1>Navigate to Safety</h1>
+        <p class="trip-sub">Illini Union · 4 min</p>
+      </div>
+    </header>
+    {% include "partials/sample_map.html" %}
+    <p class="fine map-note">Sample public route to a staffed place. Directions are not live.</p>
+    {% if notice == "share" %}
+      <p class="banner">Sample route share{% if share_with != "no one" %} with {{ share_with }}{% endif %}. Nothing was sent.</p>
+    {% elif notice == "record" %}
+      <p class="banner">Sample recording. The microphone stays off in this preview.</p>
+    {% elif notice == "help" %}
+      <p class="banner">Byway does not contact emergency services. You can keep this route or share it with a contact.</p>
+    {% endif %}
+    <div class="stack">
+      <a class="button button-ghost" href="{% url 'session_mode' 'navigate' %}?{% if preview_query %}{{ preview_query }}&{% endif %}notice=share">Share route</a>
+      <a class="button button-ghost" href="{% url 'session_mode' 'navigate' %}?{% if preview_query %}{{ preview_query }}&{% endif %}notice=record">Start recording</a>
+      <a class="button button-ghost" href="{% url 'session_mode' 'call' %}{% if preview_query %}?{{ preview_query }}{% endif %}">Call contact</a>
+      <a class="button" href="{% url 'session_mode' 'navigate' %}?{% if preview_query %}{{ preview_query }}&{% endif %}notice=help">Emergency options</a>
+    </div>
+  </main>
+{% endblock %}
+
+{% block tabbar %}
+  {% include "partials/tabbar.html" %}
+{% endblock %}
