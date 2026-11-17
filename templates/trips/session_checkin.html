@@ -20,14 +20,17 @@
         <svg viewBox="0 0 24 24"><path d="M12 3 5 6v6.2c0 4.2 2.8 7.2 7 8.8 4.2-1.6 7-4.6 7-8.8V6l-7-3Zm-1 12.2-3-3 1.4-1.4 1.6 1.6 3.6-3.6L16 10l-5 5.2Z"/></svg>
       </span>
       <h2>Are you okay?</h2>
-      <p>Your trip looks different from usual. The sample arrival is now 10 minutes later, and the stop has lasted 6+ minutes.</p>
-      {% if sent %}
-        <p class="banner">Sample alert sent to {{ share_with }}. Byway did not contact emergency services.</p>
-      {% endif %}
+      <p>Your trip looks unusual.</p>
+      <div class="signal-card">
+        <strong>Signals</strong>
+        <p><span>Route deviation</span>0.6 mi</p>
+        <p><span>Stopped</span>7 min</p>
+        <p><span>ETA slip</span>11 min</p>
+      </div>
       <a class="button" href="{% url 'session_mode' 'active' %}?{% if preview_query %}{{ preview_query }}&{% endif %}ok=1">I’m Okay</a>
       <a class="button button-ghost" href="{% url 'session_mode' 'active' %}{% if preview_query %}?{{ preview_query }}{% endif %}">Keep Monitoring</a>
       <a class="button button-ghost" href="{% url 'session_mode' 'places' %}{% if preview_query %}?{{ preview_query }}{% endif %}">Get Me Out</a>
-      <a class="text-link" href="{% url 'session_mode' 'checkin' %}?{% if preview_query %}{{ preview_query }}&{% endif %}sent=1">Send Alert</a>
+      <a class="button button-danger" href="{% url 'session_mode' 'unsafe' %}{% if preview_query %}?{{ preview_query }}{% endif %}">Activate Unsafe Mode</a>
     </section>
   </main>
 {% endblock %}

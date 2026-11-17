@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block title %}Invite your group · Byway{% endblock %}
+
+{% block content %}
+  <main class="screen session">
+    <header class="form-head">
+      <a class="back" href="{% url 'home' %}" aria-label="Back to home">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 5.5 8 12l6.5 6.5 1.4-1.4L10.8 12l5.1-5.1-1.4-1.4Z"/></svg>
+      </a>
+      <h1>Invite your group</h1>
+      <span></span>
+    </header>
+    <p class="outing-name">Girls Night Out</p>
+    <p class="fine">An invite stays in Byway. A phone text is not sent yet.</p>
+    {% if saved %}
+      <p class="banner">Invite saved. It stays in Byway. A phone text is not sent yet.</p>
+    {% endif %}
+    {% if error %}
+      <p class="banner">{{ error }}</p>
+    {% endif %}
+    <a class="button outing-go" href="{% url 'session_mode' 'group' %}">Open the outing</a>
+    <ul class="member-list">
+      {% for person in people %}
+        <li>
+          <span class="avatar {{ person.avatar }}" aria-hidden="true">{{ person.initial }}</span>
+          <span>
+            <strong>{{ person.name }}</strong>
+            <small>{{ person.detail }}</small>
+          </span>
+          {% if person.invited %}
+            <em>Invited</em>
+          {% else %}
+            <form class="invite-form" method="post" action="{% url 'group_invite' %}">
+              {% csrf_token %}
+              <input type="hidden" name="name" value="{{ person.name }}">
+              <button class="button" type="submit">Invite</button>
+            </form>
+          {% endif %}
+        </li>
+      {% endfor %}
+    </ul>
+    <form class="session-form invite-name" method="post" action="{% url 'group_invite' %}">
+      {% csrf_token %}
+      <label class="field">Invite someone else
+        <input type="text" name="name" maxlength="80" autocomplete="name" placeholder="Name">
+      </label>
+      <button class="button button-ghost" type="submit">Send invite</button>
+    </form>
+  </main>
+{% endblock %}
+
+{% block tabbar %}
+  {% include "partials/tabbar.html" %}
+{% endblock %}

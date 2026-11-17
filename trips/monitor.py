@@ -38,7 +38,7 @@ _TRAIN_LABELS = np.array([0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1])
 
 SAMPLE_CASES = [
     {
-        "name": "Normal coffee detour",
+        "name": "Normal coffee byway",
         "expected": "On track",
         "features": [0.15, 4, 2, 2.5],
     },

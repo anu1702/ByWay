@@ -25,6 +25,13 @@
     {{ map_center|json_script:"trip-center" }}
     {{ destination_point|json_script:"trip-destination" }}
     <p class="fine">This demo uses {{ demo_here.label }} as your current location.</p>
+    {% if not session.escalated and not session.marked_safe and not checkin %}
+      <form class="demo-checkin" method="post" action="{% url 'session_demo_checkin' session.id %}">
+        {% csrf_token %}
+        <button class="button" type="submit">Demo unusual activity</button>
+      </form>
+      <p class="fine">Opens the check-in you would see when a trip looks unusual.</p>
+    {% endif %}
     <section class="directions" id="trip-nav" {% if not route_steps %}hidden{% endif %}>
       <h2>Directions</h2>
       <p class="fine" id="trip-summary">{{ route_summary }}</p>
@@ -59,7 +66,7 @@
             <button class="button" type="submit">I’m safe</button>
           </form>
         {% endif %}
-        <a class="button button-ghost" href="{% url 'session_mode' 'places' %}?return_session={{ session.id }}">Get me out</a>
+        <a class="button button-ghost" href="{% url 'safe_nearby' %}?return_session={{ session.id }}">Get me out</a>
       </div>
       {% if pings %}
         <ul class="member-list">
@@ -91,13 +98,43 @@
         <p class="countdown" id="checkin-clock">0:30</p>
         <h2>Are you okay?</h2>
         {% if checkin.number == 1 %}
-          <p>Your trip looks unusual. This is check-in 1 of 2.</p>
+          <p>Your trip looks unusual.</p>
         {% else %}
-          <p>You missed the first check-in. One more miss shares your live location and pings the contacts whose rules allow it.</p>
+          <p>You missed the first check-in. One more miss saves a ping for the contacts whose rules allow it.</p>
+        {% endif %}
+        {% if demo_checkin %}
+          <div class="signal-card">
+            <strong>Signals</strong>
+            <p><span>Route deviation</span>0.6 mi</p>
+            <p><span>Stopped</span>7 min</p>
+            <p><span>ETA slip</span>11 min</p>
+          </div>
+          <p class="fine">Sample signals for this demo. The model did not score this press.</p>
+        {% elif score %}
+          <div class="signal-card">
+            <strong>Signals</strong>
+            <p><span>Route deviation</span>{{ score.route_deviation_miles|floatformat:1 }} mi</p>
+            <p><span>Stopped</span>{{ score.stop_minutes|floatformat:0 }} min</p>
+            <p><span>ETA slip</span>{{ score.eta_slip_minutes|floatformat:0 }} min</p>
+          </div>
         {% endif %}
         <form method="post" action="{% url 'session_answer' session.id %}">
           {% csrf_token %}
           <button class="button" type="submit">I’m Okay</button>
+        </form>
+        <form method="post" action="{% url 'session_answer' session.id %}">
+          {% csrf_token %}
+          <button class="button button-ghost" type="submit">Keep Monitoring</button>
+        </form>
+        <form method="post" action="{% url 'session_answer' session.id %}">
+          {% csrf_token %}
+          <input type="hidden" name="next" value="places">
+          <button class="button button-ghost" type="submit">Get Me Out</button>
+        </form>
+        <form method="post" action="{% url 'session_answer' session.id %}">
+          {% csrf_token %}
+          <input type="hidden" name="next" value="unsafe">
+          <button class="button button-danger" type="submit">Activate Unsafe Mode</button>
         </form>
         <form id="miss-form" method="post" action="{% url 'session_miss' session.id %}">
           {% csrf_token %}

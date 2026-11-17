@@ -22,7 +22,7 @@
     </ul>
     <div class="unsafe-actions">
       <a class="button call-911-solid" href="tel:911">Call 911</a>
-      <a class="button button-end" href="{% if request.GET.sos %}{% url 'home' %}{% else %}{% url 'session_mode' 'active' %}{% if preview_query %}?{{ preview_query }}{% endif %}{% endif %}">End Unsafe Mode</a>
+      <a class="button button-end" href="{% if request.GET.return_session %}{% url 'session_live' request.GET.return_session %}{% elif request.GET.sos %}{% url 'home' %}{% else %}{% url 'session_mode' 'active' %}{% if preview_query %}?{{ preview_query }}{% endif %}{% endif %}">End Unsafe Mode</a>
     </div>
   </main>
 {% endblock %}

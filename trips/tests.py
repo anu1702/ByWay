@@ -7,7 +7,7 @@ from django.test import TestCase
 from django.utils import timezone
 
 from accounts.services import demo_user
-from trips.models import Contact, LocationFix, SafetySession
+from trips.models import CheckIn, Contact, LocationFix, SafetySession
 from trips.monitor import decides, lab_rows, miles_from_path, probability
 from trips.routing import DEMO_HERE, directions_from_steps, places_from_payload
 from trips.safe_places import is_open, places_from_elements
@@ -16,7 +16,7 @@ from trips.safe_places import is_open, places_from_elements
 class MonitorTests(TestCase):
     def test_sample_cases_follow_the_thresholds(self):
         rows = {row["name"]: row for row in lab_rows()}
-        coffee = rows["Normal coffee detour"]["probability"]
+        coffee = rows["Normal coffee byway"]["probability"]
         bus = rows["Late bus wait"]["probability"]
         stopped = rows["Long stop off-route"]["probability"]
         wrong = rows["Wrong-direction trip"]["probability"]
@@ -282,3 +282,73 @@ class OpenPlaceTests(TestCase):
         self.client.force_login(demo_user())
         response = self.client.post("/sessions/safe-nearby/search/", {"latitude": "nope"})
         self.assertEqual(response.status_code, 400)
+
+
+class GroupInviteTests(TestCase):
+    def test_group_mode_invites_before_the_outing(self):
+        self.client.force_login(demo_user())
+        home = self.client.get("/home/")
+        self.assertContains(home, 'href="/sessions/group/invite/"')
+
+        page = self.client.get("/sessions/group/invite/")
+        self.assertContains(page, "Invite your group")
+        self.assertContains(page, "Priya")
+        self.assertContains(page, "Open the outing")
+        self.assertContains(page, "A phone text is not sent yet.")
+
+        sent = self.client.post("/sessions/group/invite/", {"name": "Priya"}, follow=True)
+        self.assertContains(sent, "Invite saved.")
+        self.assertContains(sent, "Invited")
+
+        outing = self.client.get("/sessions/group/")
+        self.assertContains(outing, "Girls Night Out")
+        self.assertContains(outing, "group-map")
+
+    def test_a_check_in_offers_the_four_next_steps(self):
+        user = demo_user()
+        self.client.force_login(user)
+        session = SafetySession.objects.create(
+            user=user,
+            trip_type="walk",
+            destination="Main Library",
+            monitoring="balanced",
+        )
+        CheckIn.objects.create(
+            session=session,
+            number=1,
+            deadline=timezone.now() + timedelta(minutes=1),
+        )
+        page = self.client.get(f"/sessions/{session.id}/")
+        self.assertContains(page, "I’m Okay")
+        self.assertContains(page, "Keep Monitoring")
+        self.assertContains(page, "Get Me Out")
+        self.assertContains(page, "Activate Unsafe Mode")
+        sent = self.client.post(f"/sessions/{session.id}/answer/", {"next": "unsafe"})
+        self.assertEqual(sent.status_code, 302)
+        self.assertIn("/sessions/unsafe/", sent.url)
+        self.assertIn(f"return_session={session.id}", sent.url)
+        CheckIn.objects.create(
+            session=session,
+            number=2,
+            deadline=timezone.now() + timedelta(minutes=1),
+        )
+        places = self.client.post(f"/sessions/{session.id}/answer/", {"next": "places"})
+        self.assertEqual(places.status_code, 302)
+        self.assertIn("/sessions/safe-nearby/", places.url)
+        self.assertIn(f"return_session={session.id}", places.url)
+        self.assertIsNone(session.open_checkin())
+
+    def test_demo_button_opens_a_check_in(self):
+        user = demo_user()
+        self.client.force_login(user)
+        session = SafetySession.objects.create(
+            user=user,
+            trip_type="walk",
+            destination="Main Library",
+            monitoring="balanced",
+        )
+        response = self.client.post(f"/sessions/{session.id}/demo-checkin/", follow=True)
+        self.assertContains(response, "Are you okay?")
+        self.assertContains(response, "Sample signals for this demo.")
+        self.assertContains(response, "Activate Unsafe Mode")
+        self.assertIsNotNone(session.open_checkin())

@@ -3,6 +3,7 @@ from datetime import timedelta
 from django.contrib.auth.decorators import login_required
 from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods
 
@@ -106,6 +107,7 @@ PLACES = [
 ]
 
 CHECKIN_WAIT = timedelta(seconds=30)
+DEMO_CHECKIN_KEY = "demo_checkins"
 
 PREVIEW_MODES = [
     ("active", "On track"),
@@ -114,6 +116,22 @@ PREVIEW_MODES = [
     ("places", "Get out"),
     ("group", "Group"),
     ("incident", "Incident"),
+]
+
+# People who appear on the sample outing. Invites stay in the app.
+OUTING_PEOPLE = (
+    {"name": "Priya", "detail": "Heading to the outing", "avatar": "avatar-2"},
+    {"name": "Lena", "detail": "Heading to the outing", "avatar": "avatar-3"},
+    {"name": "Camille", "detail": "Heading to the outing", "avatar": "avatar-4"},
+)
+GROUP_INVITE_KEY = "group_invites"
+
+# Sample outing around The Red Lion. Distances match the group list.
+GROUP_PINS = [
+    {"name": "You", "latitude": 40.109949, "longitude": -88.235644, "color": "#ff8a6a", "direction": "left", "offset": [-12, 0]},
+    {"name": "Priya", "latitude": 40.111108, "longitude": -88.234506, "color": "#e7b3a4", "direction": "right", "offset": [12, 0]},
+    {"name": "Lena", "latitude": 40.107050, "longitude": -88.235644, "color": "#c4a3b8", "direction": "bottom", "offset": [0, 10]},
+    {"name": "Camille", "latitude": 40.114442, "longitude": -88.240382, "color": "#8d5a6e", "direction": "top", "offset": [0, -10]},
 ]
 
 
@@ -176,6 +194,7 @@ def preview_context(request, mode):
         "notice": request.GET.get("notice", ""),
         "tab": tab,
         "filter": place_filter,
+        "group_pins": GROUP_PINS,
         "filter_choices": (
             ("all", "All"),
             ("open", "Open now"),
@@ -319,6 +338,9 @@ def safe_nearby(request):
     if monitoring not in MONITOR_NOTES:
         monitoring = "balanced"
     found = nearby_open_places(DEMO_HERE["latitude"], DEMO_HERE["longitude"], timezone.localtime())
+    return_session = request.GET.get("return_session", "")
+    if not return_session.isdigit():
+        return_session = ""
     return render(
         request,
         "trips/safe_nearby.html",
@@ -328,6 +350,7 @@ def safe_nearby(request):
             "demo_here": DEMO_HERE,
             "places": found["places"],
             "fallback": found["fallback"],
+            "return_session": return_session,
         },
     )
 
@@ -453,6 +476,7 @@ def session_live(request, session_id):
         {
             "session": session,
             "checkin": checkin,
+            "demo_checkin": _is_demo_checkin(request, checkin),
             "pings": session.pings.select_related("contact"),
             "members": session.members.select_related("contact"),
             "score": session.scores.first(),
@@ -616,6 +640,32 @@ def session_export(request, session_id):
     return response
 
 
+def _remember_demo_checkin(request, checkin):
+    stored = request.session.get(DEMO_CHECKIN_KEY, [])
+    if not isinstance(stored, list):
+        stored = []
+    if checkin.id not in stored:
+        stored.append(checkin.id)
+    request.session[DEMO_CHECKIN_KEY] = stored[-20:]
+    request.session.modified = True
+
+
+def _is_demo_checkin(request, checkin):
+    stored = request.session.get(DEMO_CHECKIN_KEY, [])
+    return bool(checkin and isinstance(stored, list) and checkin.id in stored)
+
+
+@login_required
+@require_http_methods(["POST"])
+def session_demo_checkin(request, session_id):
+    session = _session_or_404(session_id, request.user)
+    if not session.escalated and not session.marked_safe and not session.open_checkin():
+        checkin = _open_checkin(session)
+        if checkin:
+            _remember_demo_checkin(request, checkin)
+    return redirect("session_live", session.id)
+
+
 @login_required
 @require_http_methods(["POST"])
 def session_answer(request, session_id):
@@ -627,6 +677,11 @@ def session_answer(request, session_id):
         checkin.save()
         session.missed_checkins = 0
         session.save(update_fields=["missed_checkins"])
+    nxt = request.POST.get("next", "")
+    if nxt == "places":
+        return redirect(f"{reverse('safe_nearby')}?return_session={session.id}")
+    if nxt == "unsafe":
+        return redirect(f"{reverse('session_mode', args=['unsafe'])}?return_session={session.id}")
     return redirect("session_live", session.id)
 
 
@@ -635,10 +690,14 @@ def session_answer(request, session_id):
 def session_miss(request, session_id):
     session = _session_or_404(session_id, request.user)
     checkin = session.open_checkin()
+    was_demo = _is_demo_checkin(request, checkin)
     if checkin and timezone.now() + timedelta(seconds=2) >= checkin.deadline:
         _miss_checkin(session, checkin)
     elif checkin is None:
         _refresh_checkins(session)
+    opened = session.open_checkin()
+    if was_demo and opened:
+        _remember_demo_checkin(request, opened)
     target = redirect("session_live", session.id)
     if session.open_checkin():
         target["Location"] += "?notify=1"
@@ -699,6 +758,89 @@ def session_safe(request, session_id):
     if session.escalated:
         _mark_safe(session)
     return redirect("session_live", session.id)
+
+
+def _invited_names(request):
+    stored = request.session.get(GROUP_INVITE_KEY, [])
+    if not isinstance(stored, list):
+        return []
+    names = []
+    for name in stored:
+        if isinstance(name, str) and name.strip():
+            names.append(name.strip())
+    return names
+
+
+def _group_people(user, invited):
+    people = [dict(person) for person in OUTING_PEOPLE]
+    seen = {person["name"].casefold() for person in people}
+    for contact in Contact.objects.filter(user=user):
+        key = contact.name.casefold()
+        if key in seen:
+            continue
+        people.append({"name": contact.name, "detail": "Saved contact", "avatar": ""})
+        seen.add(key)
+    invited_keys = {name.casefold() for name in invited}
+    for person in people:
+        person["invited"] = person["name"].casefold() in invited_keys
+        person["initial"] = person["name"][:1].upper()
+    extras = []
+    for name in invited:
+        if name.casefold() in seen:
+            continue
+        extras.append(
+            {
+                "name": name,
+                "detail": "Invited by name",
+                "avatar": "",
+                "invited": True,
+                "initial": name[:1].upper(),
+            }
+        )
+        seen.add(name.casefold())
+    return people + extras
+
+
+def _remember_invite(request, name):
+    invited = _invited_names(request)
+    if name.casefold() not in {item.casefold() for item in invited}:
+        invited.append(name)
+        request.session[GROUP_INVITE_KEY] = invited
+        request.session.modified = True
+    return invited
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def group_invite(request):
+    invited = _invited_names(request)
+    error = ""
+    saved = False
+    if request.method == "POST":
+        raw = request.POST.get("name", "").strip()
+        people = _group_people(request.user, invited)
+        known = {person["name"].casefold(): person["name"] for person in people}
+        if raw.casefold() in known:
+            _remember_invite(request, known[raw.casefold()])
+            saved = True
+        elif any(character.isdigit() for character in raw):
+            error = "Use a name. Byway does not text a phone number."
+        elif 2 <= len(raw) <= 80:
+            _remember_invite(request, raw)
+            saved = True
+        else:
+            error = "Enter a name to invite."
+        if saved:
+            request.session["group_invite_saved"] = True
+            return redirect("group_invite")
+    else:
+        saved = bool(request.session.pop("group_invite_saved", False))
+    people = _group_people(request.user, _invited_names(request))
+    return render(
+        request,
+        "trips/session_group_invite.html",
+        {"people": people, "error": error, "saved": saved},
+    )
 
 
 @login_required

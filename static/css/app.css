@@ -610,6 +610,23 @@ legend { font-weight: 700; margin-bottom: 10px; }
   filter: invert(100%) hue-rotate(180deg) brightness(72%) contrast(92%);
 }
 
+.map-live .leaflet-tooltip {
+  padding: 3px 8px;
+  border: 0;
+  border-radius: 999px;
+  background: #2a1218;
+  color: #f6f0f4;
+  box-shadow: none;
+  font-family: inherit;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.map-live .leaflet-tooltip-top:before { border-top-color: #2a1218; }
+.map-live .leaflet-tooltip-bottom:before { border-bottom-color: #2a1218; }
+.map-live .leaflet-tooltip-left:before { border-left-color: #2a1218; }
+.map-live .leaflet-tooltip-right:before { border-right-color: #2a1218; }
+
 .map-live .leaflet-control-attribution {
   font-size: 10px;
   max-width: 70%;
@@ -670,7 +687,33 @@ legend { font-weight: 700; margin-bottom: 10px; }
   font-variant-numeric: tabular-nums;
 }
 
+.prompt .button,
 .prompt form .button { width: 100%; }
+
+.demo-checkin .button { width: 100%; margin-top: 12px; }
+
+.signal-card {
+  display: grid;
+  gap: 6px;
+  margin: 4px 0;
+  padding: 14px;
+  border-radius: 16px;
+  background: var(--tint);
+  text-align: left;
+}
+
+.signal-card strong { font-size: 0.95rem; }
+
+.signal-card p {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0;
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.signal-card span { color: var(--muted); font-weight: 600; }
 
 .signal-block h2,
 .panel h2 { margin: 18px 0 10px; font-size: 1rem; }
@@ -903,6 +946,27 @@ legend { font-weight: 700; margin-bottom: 10px; }
   font-style: normal;
   font-weight: 700;
 }
+
+.invite-form { margin: 0 0 0 auto; }
+
+.invite-form .button {
+  width: auto;
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: 999px;
+  box-shadow: none;
+  font-size: 0.82rem;
+}
+
+.invite-name { margin-top: 18px; }
+
+.outing-name {
+  margin: -8px 0 8px;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.outing-go { margin-top: 14px; }
 
 .timeline {
   list-style: none;

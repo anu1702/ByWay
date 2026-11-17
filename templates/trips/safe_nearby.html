@@ -5,7 +5,7 @@
 {% block content %}
   <main class="screen form-screen" id="safe-nearby">
     <header class="form-head">
-      <a class="back" href="{% url 'home' %}" aria-label="Back to home">
+      <a class="back" href="{% if return_session %}{% url 'session_live' return_session %}{% else %}{% url 'home' %}{% endif %}" aria-label="{% if return_session %}Back to the trip{% else %}Back to home{% endif %}">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 5.5 8 12l6.5 6.5 1.4-1.4L10.8 12l5.1-5.1-1.4-1.4Z"/></svg>
       </a>
       <h1>Somewhere safe</h1>

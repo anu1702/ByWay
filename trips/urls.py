@@ -19,8 +19,10 @@ urlpatterns = [
     path("sessions/<int:session_id>/score.json", views.session_score_api, name="session_score_api"),
     path("sessions/<int:session_id>/export.json", views.session_export, name="session_export"),
     path("sessions/<int:session_id>/answer/", views.session_answer, name="session_answer"),
+    path("sessions/<int:session_id>/demo-checkin/", views.session_demo_checkin, name="session_demo_checkin"),
     path("sessions/<int:session_id>/miss/", views.session_miss, name="session_miss"),
     path("sessions/<int:session_id>/location/", views.session_location, name="session_location"),
     path("sessions/<int:session_id>/safe/", views.session_safe, name="session_safe"),
+    path("sessions/group/invite/", views.group_invite, name="group_invite"),
     path("sessions/<slug:mode>/", views.session_mode, name="session_mode"),
 ]

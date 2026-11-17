@@ -1,11 +1,16 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}{{ page_title }} · Byway{% endblock %}
+
+{% block head %}
+  <link rel="stylesheet" href="{% static 'vendor/leaflet/leaflet.css' %}">
+{% endblock %}
 
 {% block content %}
   <main class="screen session">
     <header class="trip-head">
-      <a class="back" href="{% url 'home' %}" aria-label="Back to home">
+      <a class="back" href="{% url 'group_invite' %}" aria-label="Back to invites">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 5.5 8 12l6.5 6.5 1.4-1.4L10.8 12l5.1-5.1-1.4-1.4Z"/></svg>
       </a>
       <div>
@@ -13,7 +18,9 @@
         <p class="trip-sub">4 members · Active</p>
       </div>
     </header>
-    {% include "partials/sample_map.html" with map_class="map-short" %}
+    <div id="group-map" class="map map-live" role="img" aria-label="Map of the group"></div>
+    {{ group_pins|json_script:"group-pins" }}
+    <p class="fine">Sample pins for this outing. Nothing is shared.</p>
     {% if notice == "message" %}
       <p class="banner">Sample message. The group was not contacted.</p>
     {% elif notice == "link" %}
@@ -47,4 +54,35 @@
 
 {% block tabbar %}
   {% include "partials/tabbar.html" %}
+{% endblock %}
+
+{% block scripts %}
+  <script src="{% static 'vendor/leaflet/leaflet.js' %}"></script>
+  <script>
+    (function () {
+      var node = document.getElementById("group-map");
+      var dataNode = document.getElementById("group-pins");
+      if (!node || !dataNode || !window.L) return;
+      var pins = JSON.parse(dataNode.textContent);
+      if (!pins.length) return;
+      var map = L.map(node, {zoomControl: true, fadeAnimation: false});
+      L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: "&copy; OpenStreetMap",
+        maxZoom: 19
+      }).addTo(map);
+      var points = [];
+      pins.forEach(function (pin) {
+        var point = [pin.latitude, pin.longitude];
+        points.push(point);
+        L.circleMarker(point, {
+          radius: 8,
+          color: "#ffffff",
+          weight: 2,
+          fillColor: pin.color,
+          fillOpacity: 1
+        }).bindTooltip(pin.name, {permanent: true, direction: pin.direction, offset: pin.offset}).addTo(map);
+      });
+      map.fitBounds(points, {padding: [28, 28]});
+    })();
+  </script>
 {% endblock %}
